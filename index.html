@@ -4,62 +4,56 @@
     <meta charset="UTF-8">
     <title>Витрина Ласточка</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <style>
-        body { font-family: sans-serif; background: #f8f9fa; padding: 20px; }
-        .products-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 20px; }
-        .product-card { background: white; border-radius: 12px; padding: 15px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
-        .image-box img { width: 100%; height: 200px; object-fit: cover; border-radius: 8px; }
-    </style>
 </head>
 <body>
 
-<div class="products-grid" id="products-grid">Загрузка товаров...</div>
+    <div id="products-grid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 20px;">
+        <p>Загрузка данных...</p>
+    </div>
 
 <script>
     const SUPABASE_URL = "https://eqbzrqpktsdbvhrrjdpy.supabase.co"; 
     const SUPABASE_ANON_KEY = "sb_publishable_DTbnGjq6tA-vu_t1fmpp0w_2z_WLsxh"; 
     const GITHUB_BASE = "https://raw.githubusercontent.com/Richy5959/lastochka_phono/main";
-    const MAP_URL = GITHUB_BASE + "/map.json";
 
-    // Инициализируем клиент один раз глобально
-    const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-
-    async function loadStorefront() {
+    async function init() {
         try {
-            // 1. Грузим карту путей
-            const mapResponse = await fetch(MAP_URL);
-            const photoMap = await mapResponse.json();
-
-            // 2. Грузим товары из Supabase
-            const { data, error } = await supabase.from('products').select('*');
+            const grid = document.getElementById('products-grid');
+            
+            // 1. Грузим карту
+            const mapRes = await fetch(GITHUB_BASE + '/map.json');
+            const photoMap = await mapRes.json();
+            
+            // 2. Инициализируем Supabase
+            const client = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+            
+            // 3. Получаем товары
+            const { data, error } = await client.from('products').select('*');
             
             if (error) throw error;
-
-            const grid = document.getElementById('products-grid');
-            grid.innerHTML = '';
-
-            data.forEach(product => {
-                const code = product.product_code;
-                const path = photoMap[code]; 
-                const imgUrl = path ? `${GITHUB_BASE}/${path}` : 'https://placehold.co/300x300?text=Нет+фото';
-
+            
+            grid.innerHTML = ''; // Очищаем "Загрузка..."
+            
+            data.forEach(p => {
+                const imgPath = photoMap[p.product_code];
+                const src = imgPath ? `${GITHUB_BASE}/${imgPath}` : 'https://placehold.co/200?text=Нет+фото';
+                
                 grid.insertAdjacentHTML('beforeend', `
-                    <div class="product-card">
-                        <div class="image-box">
-                            <img src="${imgUrl}" onerror="this.src='https://placehold.co/300x300?text=Ошибка'">
-                        </div>
-                        <h3>АРТИКУЛ: ${code || '---'}</h3>
-                        <p>${product.name || 'Без названия'}</p>
-                        <p><b>${product.price || '0'} грн.</b></p>
+                    <div style="border:1px solid #ccc; padding:10px;">
+                        <img src="${src}" style="width:100%" onerror="this.src='https://placehold.co/200?text=Ошибка'">
+                        <h3>${p.product_code}</h3>
+                        <p>${p.price} грн</p>
                     </div>
                 `);
             });
-        } catch (err) {
-            console.error("Ошибка:", err);
-            document.getElementById('products-grid').innerText = "Ошибка загрузки: " + err.message;
+            console.log("Успех! Товары отрисованы.");
+        } catch (e) {
+            console.error("Ошибка в коде:", e);
+            document.getElementById('products-grid').innerHTML = "Ошибка: " + e.message;
         }
     }
-    loadStorefront();
+    
+    init();
 </script>
 </body>
 </html>
