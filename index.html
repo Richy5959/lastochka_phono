@@ -8,18 +8,21 @@
         body { font-family: sans-serif; background: #f8f9fa; padding: 20px; }
         .products-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 20px; }
         .product-card { background: white; border-radius: 12px; padding: 15px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
-        .image-box img { width: 100%; height: auto; border-radius: 8px; }
+        .image-box img { width: 100%; height: 200px; object-fit: cover; border-radius: 8px; }
     </style>
 </head>
 <body>
 
-<div class="products-grid" id="products-grid">Загрузка...</div>
+<div class="products-grid" id="products-grid">Загрузка товаров...</div>
 
 <script>
     const SUPABASE_URL = "https://eqbzrqpktsdbvhrrjdpy.supabase.co"; 
     const SUPABASE_ANON_KEY = "sb_publishable_DTbnGjq6tA-vu_t1fmpp0w_2z_WLsxh"; 
     const GITHUB_BASE = "https://raw.githubusercontent.com/Richy5959/lastochka_phono/main";
     const MAP_URL = GITHUB_BASE + "/map.json";
+
+    // Инициализируем клиент один раз глобально
+    const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
     async function loadStorefront() {
         try {
@@ -28,7 +31,6 @@
             const photoMap = await mapResponse.json();
 
             // 2. Грузим товары из Supabase
-            const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
             const { data, error } = await supabase.from('products').select('*');
             
             if (error) throw error;
@@ -38,7 +40,7 @@
 
             data.forEach(product => {
                 const code = product.product_code;
-                const path = photoMap[code]; // Ищем путь в map.json
+                const path = photoMap[code]; 
                 const imgUrl = path ? `${GITHUB_BASE}/${path}` : 'https://placehold.co/300x300?text=Нет+фото';
 
                 grid.insertAdjacentHTML('beforeend', `
@@ -46,9 +48,9 @@
                         <div class="image-box">
                             <img src="${imgUrl}" onerror="this.src='https://placehold.co/300x300?text=Ошибка'">
                         </div>
-                        <h3>${code}</h3>
-                        <p>${product.name}</p>
-                        <p>${product.price} грн.</p>
+                        <h3>АРТИКУЛ: ${code || '---'}</h3>
+                        <p>${product.name || 'Без названия'}</p>
+                        <p><b>${product.price || '0'} грн.</b></p>
                     </div>
                 `);
             });
